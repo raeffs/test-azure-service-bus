@@ -28,7 +28,7 @@ namespace Chat
             Console.Write("Enter your username: ");
             var username = Console.ReadLine();
 
-            var subscriptionName = $"{username}-{new Guid()}";
+            var subscriptionName = $"{username}-{Guid.NewGuid()}";
 
             await manager.CreateSubscriptionAsync(new SubscriptionDescription(topicName, subscriptionName)
             {
@@ -51,8 +51,10 @@ namespace Chat
                 }
             );
 
-            var helloMessage = new Message(Encoding.UTF8.GetBytes("has entered the room"));
-            helloMessage.Label = username;
+            var helloMessage = new Message(Encoding.UTF8.GetBytes("has entered the room"))
+            {
+                Label = username
+            };
             await topicClient.SendAsync(helloMessage);
 
             while (true)
@@ -63,13 +65,17 @@ namespace Chat
                     break;
                 }
 
-                var chatMessage = new Message(Encoding.UTF8.GetBytes(message));
-                chatMessage.Label = username;
+                var chatMessage = new Message(Encoding.UTF8.GetBytes(message))
+                {
+                    Label = username
+                };
                 await topicClient.SendAsync(chatMessage);
             }
 
-            var byeMessage = new Message(Encoding.UTF8.GetBytes("has left the room"));
-            byeMessage.Label = username;
+            var byeMessage = new Message(Encoding.UTF8.GetBytes("has left the room"))
+            {
+                Label = username
+            };
             await topicClient.SendAsync(byeMessage);
 
             await topicClient.CloseAsync();
