@@ -3,7 +3,6 @@ using Microsoft.Azure.ServiceBus.Management;
 using Microsoft.Extensions.Configuration;
 using System;
 using System.Reflection;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace Chat
@@ -39,10 +38,10 @@ namespace Chat
             var subscriptionClient = new SubscriptionClient(connectionString, topicName, subscriptionName);
 
             subscriptionClient.RegisterMessageHandler(
-                (message, token) =>
+                (rawMessage, token) =>
                 {
-                    var content = Encoding.UTF8.GetString(message.Body);
-                    Console.WriteLine($"{message.Label}: {content}");
+                    var message = (ChatMessage)rawMessage;
+                    Console.WriteLine($"{message.Username}{(message.IsControlMessage ? string.Empty : ":")} {message.Message}");
                     return Task.CompletedTask;
                 },
                 args =>
@@ -51,11 +50,13 @@ namespace Chat
                 }
             );
 
-            var helloMessage = new Message(Encoding.UTF8.GetBytes("has entered the room"))
+            var helloMessage = new ChatMessage
             {
-                Label = username
+                Username = username,
+                Message = "has entered the room",
+                IsControlMessage = true
             };
-            await topicClient.SendAsync(helloMessage);
+            await topicClient.SendAsync((Message)helloMessage);
 
             while (true)
             {
@@ -65,18 +66,21 @@ namespace Chat
                     break;
                 }
 
-                var chatMessage = new Message(Encoding.UTF8.GetBytes(message))
+                var chatMessage = new ChatMessage
                 {
-                    Label = username
+                    Username = username,
+                    Message = message
                 };
-                await topicClient.SendAsync(chatMessage);
+                await topicClient.SendAsync((Message)chatMessage);
             }
 
-            var byeMessage = new Message(Encoding.UTF8.GetBytes("has left the room"))
+            var byeMessage = new ChatMessage
             {
-                Label = username
+                Username = username,
+                Message = "has left the room",
+                IsControlMessage = true
             };
-            await topicClient.SendAsync(byeMessage);
+            await topicClient.SendAsync((Message)byeMessage);
 
             await topicClient.CloseAsync();
             await subscriptionClient.CloseAsync();
